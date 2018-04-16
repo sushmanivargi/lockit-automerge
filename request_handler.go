@@ -24,7 +24,6 @@ func basicAuth(handler http.HandlerFunc) http.HandlerFunc {
 }
 
 func GetOnly(h http.HandlerFunc) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			h(w, r)
@@ -35,7 +34,6 @@ func GetOnly(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func PostOnly(h http.HandlerFunc) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
 			h(w, r)
