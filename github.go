@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
-	"strings"
 
 	"github.com/coupa/lockit-core/vcs"
 )
@@ -74,26 +73,36 @@ func lockitMerge(prNumber string) (err error) {
 	if prNumber == "" || prNumber == "0" {
 		return errors.New("Invalid PR number")
 	}
-	var projectAliases []string //TODO check pr
+	var projectAliases []string
 	var gh vcs.Github
 	gh.Token = config.Lockit.GithubToken
 	pr, err := gh.GetPullRequest(config.Lockit.Owner, config.Lockit.Repo, prNumber, projectAliases)
 	if err != nil {
 		return err
 	}
-	if pr.Target == "master" && len(pr.Labels) != 0 {
-		if strings.Contains(strings.ToLower(strings.Join(pr.Labels, ":")), "wip") == false {
-			log.Printf("Running: lockit-cli merge %s/%s %s", config.Lockit.Owner, config.Lockit.Repo, pr.Number)
+	if pr.Target == "master" && !contains(pr.Labels, "wip") && !contains(pr.Labels, "pending") {
+		log.Printf("Running: lockit-cli merge %s/%s %s", config.Lockit.Owner, config.Lockit.Repo, pr.Number)
 
-			cmd := exec.Command("lockit-cli", "merge", config.Lockit.Owner+"/"+config.Lockit.Repo, pr.Number)
-			out, err := cmd.CombinedOutput()
-			if err != nil {
-				return err
-			}
-			if out != nil {
-				println("Output: " + string(out))
-			}
+		cmd := exec.Command("lockit-cli", "merge", config.Lockit.Owner+"/"+config.Lockit.Repo, pr.Number)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
+		}
+		if out != nil {
+			println("Output: " + string(out))
 		}
 	}
 	return nil
+}
+
+func contains(arr []string, str string) bool {
+	if len(arr) == 0 {
+		return false
+	}
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
 }

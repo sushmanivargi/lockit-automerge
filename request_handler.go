@@ -29,7 +29,7 @@ func GetOnly(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
-		http.Error(w, "Invalid request method.", http.StatusMethodNotAllowed)
+		http.Error(w, "Invalid request", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -39,14 +39,14 @@ func PostOnly(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
-		http.Error(w, "Invalid request method.", http.StatusMethodNotAllowed)
+		http.Error(w, "Invalid request", http.StatusMethodNotAllowed)
 	}
 }
 
 // Function handler to log incoming requests
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		log.Printf("[INFO] %s %s %s", r.RemoteAddr, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -67,14 +67,15 @@ func githubHookHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	event := r.Header.Get("X-Github-Event")
-	var payload map[string]interface{}
-	if err = json.Unmarshal([]byte(body), &payload); err != nil {
-		log.Printf("[ERROR] Problem with json.Unmarshal: %s", err.Error())
-		w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
-		w.WriteHeader(http.StatusInternalServerError)
-	}
 
 	if event == "status" {
+		var payload map[string]interface{}
+		if err = json.Unmarshal([]byte(body), &payload); err != nil {
+			log.Printf("[ERROR] Problem with json.Unmarshal: %s", err.Error())
+			w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
 		err := processStatusChangeWebhook(payload)
 		if err != nil {
 			w.Write([]byte("{\"status\": \"Internal Server Error\"}"))

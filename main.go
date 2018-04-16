@@ -12,9 +12,14 @@ var (
 
 func init() {
 	required := []string{
+		"LOCKIT_AUTOMERGE_HOST",
+		"LOCKIT_AUTOMERGE_USERNAME",
+		"LOCKIT_AUTOMERGE_PASSWORD",
+
 		"LOCKIT_GITHUB_TOKEN",
 		"LOCKIT_API_KEY",
 		"LOCKIT_HOST",
+		"API_GITHUB_TOKEN",
 	}
 	for _, field := range required {
 		value := os.Getenv(field)

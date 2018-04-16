@@ -25,6 +25,7 @@ type LockitConfig struct {
 	Owner       string
 	Repo        string
 	GithubToken string
+	Labels      string
 	ApiKey      string
 	Host        string
 }
@@ -42,9 +43,10 @@ func (c *Config) Setup() {
 	}
 
 	c.Lockit = LockitConfig{
-		Owner:       os.Getenv("LOCKIT_AUTOMERGE_OWNER"),
-		Repo:        os.Getenv("LOCKIT_AUTOMERGE_REPO"),
+		Owner:       os.Getenv("GITHUB_OWNER"),
+		Repo:        os.Getenv("GITHUB_REPO"),
 		GithubToken: os.Getenv("LOCKIT_GITHUB_TOKEN"),
+		Labels:      os.Getenv("LOCKIT_IGNORE_LABELS"),
 		ApiKey:      os.Getenv("LOCKIT_API_KEY"),
 		Host:        os.Getenv("LOCKIT_HOST"),
 	}
@@ -55,6 +57,10 @@ func (c *Config) Setup() {
 
 	if config.Lockit.Repo == "" || config.Lockit.Repo == "0" {
 		config.Lockit.Repo = "coupa_development"
+	}
+
+	if config.Lockit.Labels == "" || config.Lockit.Labels == "0" {
+		config.Lockit.Labels = "wip"
 	}
 
 	if config.Server.Port == "" || config.Server.Port == "0" {
