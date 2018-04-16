@@ -7,9 +7,9 @@ import (
 
 // Config is a struct to maintain config data
 type Config struct {
-	Server ServerConfig
-	Lockit LockitConfig
-  GithubToken string
+	Server      ServerConfig
+	Lockit      LockitConfig
+	GithubToken string
 }
 
 // ServerConfig holds config data for Server
@@ -29,10 +29,9 @@ type LockitConfig struct {
 	Host        string
 }
 
-
 // Setup converts the env variables into struct values
 func (c *Config) Setup() {
-  c.GithubToken = os.Getenv("API_GITHUB_TOKEN")
+	c.GithubToken = os.Getenv("API_GITHUB_TOKEN")
 
 	c.Server = ServerConfig{
 		Host:     os.Getenv("LOCKIT_AUTOMERGE_HOST"),

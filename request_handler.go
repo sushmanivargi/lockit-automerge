@@ -2,11 +2,11 @@ package main
 
 import (
 	"crypto/subtle"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
-  "io/ioutil"
-  "encoding/json"
 )
 
 // Function handler that provides HTTP authentication via Basic Auth
@@ -59,27 +59,27 @@ func handleGetHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func githubHookHandler(w http.ResponseWriter, r *http.Request) {
-  r.ParseForm()
-  body, err := ioutil.ReadAll(r.Body)
-  if err != nil {
-    log.Printf("[ERROR] %s", err.Error())
-    w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
-    w.WriteHeader(http.StatusInternalServerError)
-  }
-  event := r.Header.Get("X-Github-Event")
-  var payload map[string]interface{}
-  if err = json.Unmarshal([]byte(body), &payload); err != nil {
-    log.Printf("[ERROR] Problem with json.Unmarshal: %s", err.Error())
-    w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
-    w.WriteHeader(http.StatusInternalServerError)
-  }
+	r.ParseForm()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("[ERROR] %s", err.Error())
+		w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	event := r.Header.Get("X-Github-Event")
+	var payload map[string]interface{}
+	if err = json.Unmarshal([]byte(body), &payload); err != nil {
+		log.Printf("[ERROR] Problem with json.Unmarshal: %s", err.Error())
+		w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 
-  if event == "status"{
-    err := processStatusChangeWebhook(payload)
-    if err != nil{
-      w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
-      w.WriteHeader(http.StatusInternalServerError)
-    }
-  }
-  w.WriteHeader(http.StatusOK)
+	if event == "status" {
+		err := processStatusChangeWebhook(payload)
+		if err != nil {
+			w.Write([]byte("{\"status\": \"Internal Server Error\"}"))
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+	w.WriteHeader(http.StatusOK)
 }
