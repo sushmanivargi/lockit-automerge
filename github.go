@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 
 	"github.com/coupa/lockit-core/vcs"
 )
@@ -16,6 +17,8 @@ import (
 func processStatusChangeWebhook(payload map[string]interface{}) (err error) {
 	if payload["state"] == "success" {
 		if prNumber, err := searchPullRequest(payload["sha"].(string)); err == nil {
+			log.Printf("[prNumber] %s", prNumber)
+			log.Printf("[initiating lockitMerge] %s", prNumber)
 			err := lockitMerge(prNumber)
 			if err != nil {
 				return err
@@ -34,7 +37,8 @@ func searchPullRequest(sha string) (prNumber string, err error) {
 	}
 	if data["total_count"].(float64) >= 1 {
 		if result := data["items"].([]interface{}); len(result) > 0 {
-			number = fmt.Sprint(result[0].(map[string]interface{})["number"].(string))
+			number := fmt.Sprint(result[0].(map[string]interface{})["number"].(float64))
+			log.Printf("[number] %v", number)
 			return number, nil
 		}
 	}
@@ -76,11 +80,21 @@ func lockitMerge(prNumber string) (err error) {
 	var projectAliases []string
 	var gh vcs.Github
 	gh.Token = config.Lockit.GithubToken
+	log.Printf("Initiating gh.GetPullRequest")
 	pr, err := gh.GetPullRequest(config.Lockit.Owner, config.Lockit.Repo, prNumber, projectAliases)
+	log.Printf("[pr] %v", pr)
 	if err != nil {
 		return err
 	}
-	if pr.Target == "master" && !contains(pr.Labels, "wip") && !contains(pr.Labels, "pending") {
+
+	prInProgress := false
+	for _, ele := range strings.Split(config.Lockit.Labels, ",") {
+		if contains(pr.Labels, ele) {
+			prInProgress = true
+			break
+		}
+	}
+	if pr.Target == "master" && prInProgress == false {
 		log.Printf("Running: lockit-cli merge %s/%s %s", config.Lockit.Owner, config.Lockit.Repo, pr.Number)
 
 		cmd := exec.Command("lockit-cli", "merge", config.Lockit.Owner+"/"+config.Lockit.Repo, pr.Number)
