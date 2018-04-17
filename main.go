@@ -32,7 +32,7 @@ func init() {
 
 func main() {
 	http.HandleFunc("/health", GetOnly(basicAuth(handleGetHealth)))
-	http.HandleFunc("/hook/github", PostOnly(githubHookHandler))
+	http.HandleFunc("/hooks/github", PostOnly(githubHookHandler))
 
 	log.Print(http.ListenAndServe(":"+config.Server.Port, logRequest(http.DefaultServeMux)))
 }
