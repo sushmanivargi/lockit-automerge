@@ -1,38 +1,72 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/user"
+
+	"github.com/coupa/lockit-automerge/auth"
+	"github.com/coupa/lockit-automerge/github"
+	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron"
 )
 
-var (
-	config = &Config{}
-)
+const lockitFile = ".lockit-cli"
 
 func init() {
 	required := []string{
-		"LOCKIT_AUTOMERGE_HOST",
-		"LOCKIT_AUTOMERGE_USERNAME",
-		"LOCKIT_AUTOMERGE_PASSWORD",
-
 		"LOCKIT_GITHUB_TOKEN",
 		"LOCKIT_API_KEY",
 		"LOCKIT_HOST",
-		"API_GITHUB_TOKEN",
+		"GITHUB_TOKEN",
+		"GITHUB_HOOK_SECRET",
+		"GITHUB_WEBHOOK_ENABLED",
 	}
+
 	for _, field := range required {
 		value := os.Getenv(field)
 		if value == "0" || value == "" {
 			log.Fatalf("[ERROR]: The following *required* env variable is not set: %s\n", field)
 		}
 	}
-	config.Setup()
+
+	//Enable Jira Integration
+	user, err := user.Current()
+	if err != nil {
+		log.Fatalf("[ERROR]: Problem fetching current user: %s", err.Error())
+	}
+	filepath := user.HomeDir + "/" + lockitFile
+	data := []byte("{\"jira_enabled\":true}")
+	err = ioutil.WriteFile(filepath, data, 0644)
+	if err != nil {
+		log.Fatalf("[ERROR]: Problem writing file %s to enable jira integration: %s", filepath, err.Error())
+	}
+
 }
 
 func main() {
-	http.HandleFunc("/health", GetOnly(basicAuth(handleGetHealth)))
-	http.HandleFunc("/hooks/github", PostOnly(githubHookHandler))
+	scheduleCron()
 
-	log.Print(http.ListenAndServe(":"+config.Server.Port, logRequest(http.DefaultServeMux)))
+	router := gin.Default()
+	buildRoutes(router)
+	http.Handle("/", router)
+	router.Run()
+}
+
+func buildRoutes(router *gin.Engine) {
+	// Webhook routes
+	hooks := router.Group("/hooks")
+	{
+		hooks.Use(auth.GithubMiddleware())
+		hooks.POST("/github", github.WebhookHandler)
+	}
+}
+
+func scheduleCron() {
+	//Schedule a cron job to retry lockit automerge
+	c := cron.New()
+	c.AddFunc("@every 10m", func() { github.LockitMergeRetry() })
+	c.Start()
 }
